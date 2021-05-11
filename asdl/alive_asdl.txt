@@ -1,0 +1,62 @@
+# primitive types
+str, int, depth
+
+#TODO: is value expr??
+
+expr = CopyOperand(value v, type t)
+    | BinOp(binOp op, type t, value v1, value v2, flag* flags)
+    | ConversionOp(conversionOp op, type st, value v, type t)
+    | Icmp(icmpOp op, type t, value v1, value v2)
+    | Select(type t, conditionalExpr c, value v1, value v2) # if conditionalExpr == 1, then v1, else v1
+    # The ‘alloca‘ instruction allocates memory on the stack frame of the currently executing function, to be automatically released when this function returns to its caller. The object is always allocated in the address space for allocas indicated in the datalayout.
+    | Alloca(type t, elemsType, numElems, align) ## todo
+    | GEP(type t, ptr p, idx* i, inbounds) # get element pointer ## todo
+    | Load(type st, value v, int align) # todo align? -> this is an integer which defines alignment in memory; default is 0
+                                        # todo: maybe the type for align should be different? like an int ?
+    | Store(type st, value src, type t, value dst, int align) # todo align
+    | Br(str bb_label , value cond , str true, str false) # todo more on this
+    | Ret(str bb_label, type t, value val) # todo more on this
+    | Skip # todo: empty doesn't take an arg, is that okay ?
+    | Unreachable # todo: empty, doesn't take an arg
+
+type = UnknownType(int? depth) # todo Depth? ? default = 0
+    | NamedType(str name)
+    | IntType(int size)
+    | PtrType(type? t, int? d) # default depth = 0
+    | ArrayType(elems? e, type t, int? d)
+
+# type = Int | Ptr | Array | Unknown
+
+value = TypeFixedValue(value v, int min, int max) # todo uncertain what min and max really function as
+    | Input(str name, type t) # must start with % or
+
+const = ConstantVal(value v, type t) #todo type for v ? for all const!
+    | UndefVal(type t)
+    | CnstUnaryOp(cnstUnaryOp op, value v)
+    | CnstBinaryOp(cnstBinOp, const c1, const c2)
+    | CnstFunction(cnstFunOp, value* args, type t)
+    # todo decide: we could also expand out CnstFunction out and add constraints on the number of args for binary
+    # todo decide: and unary const function
+
+
+# all values are instance of value
+# and they all have a type
+
+cnstUnaryOp = Not | Neg | Last
+
+cnstFunOp = abs | sbits | obits | zbits | ctlz | cttz | log2 | lshr | max | sext | trunc | umax
+    | width | zext | Last
+
+
+conditionalExpr = # todo needed in Select, if conditionalExpr == 1, then v1, else v1
+
+# todo: these are actually actual strings; maybe it is good to keep it like this and convert them into strings later on?
+flags = nsw | nuw | exact # TODO others?
+
+icmpOp = EQ | NE | UGT | UGE | ULT | ULE | SGT | SGE | SLT | SLE | Var | Last
+
+conversionOp = Trunc | ZExt | SExt | ZExtOrTrunc | Ptr2Int | Int2Ptr | Bitcast | Last
+
+binOp = Add | Sub | Mul | UDiv | SDiv | URem | SRem | Shl | AShr | LShr | And | Or | Xor | Last
+
+cnstBinOp = And | Or | Xor | Add | Sub | Mul | Div | DivU | Rem | RemU | AShr | LShr | Shl | Last
