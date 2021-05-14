@@ -1,6 +1,0 @@
-%p = alloca
-store %a, %p
-%b = load %p
-  =>
-; ERROR: Mismatch in final memory state
-%b = %a

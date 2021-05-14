@@ -1,4 +1,0 @@
-store %x, i64* %p
-store %y, i64* %p
-  =>
-store %y, i64* %p

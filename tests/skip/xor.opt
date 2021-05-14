@@ -1,3 +1,0 @@
-%x = xor %A, undef
-  =>
-%x = undef

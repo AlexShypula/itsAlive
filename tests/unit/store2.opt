@@ -1,4 +1,0 @@
-; ERROR: Mismatch in values
-%x = load %p
-  =>
-%x = undef

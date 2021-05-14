@@ -1,3 +1,0 @@
-%C = select i1 false, %A, %B
-  =>
-%C = %B
