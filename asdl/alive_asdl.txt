@@ -1,39 +1,33 @@
 # primitive types
-str, int, depth, id
+str, int, depth, id, ptr
 
 # todo for align, size, min/max, depth fixed value may I use int as a primitive type ?
 # todo for skip and unreachable instructions, is it okay if I don't have parens for the constructor?
 # todo for type: NamedType, how does that fit in ? do we need type constructors ? May these be inferred ?
+
+alive = Opt(pre? precondition, prog src, prog tgt)
+
+prog = Prog(instr* instructions)
 
     # assign instructions
 instr = CopyOperand(id reg, value v, type t)
     | BinOp(id reg, binOp op, type t, value v1, value v2, flag* flags)
     | ConversionOp(id reg, conversionOp op, type st, value v, type t)
     | Icmp(id reg, icmpOp op, type t, value v1, value v2)
+
     | Select(id reg, type t, conditionalExpr c, value v1, value v2) # if conditionalExpr == 1, then v1, else v1
     # The ‘alloca‘ instruction allocates memory on the stack frame of the currently executing function, to be automatically released when this function returns to its caller. The object is always allocated in the address space for allocas indicated in the datalayout.
     # align: this is an integer which defines alignment in memory; default is 0
-    | Alloca(id reg, type t, elemsType, numElems, int align) ## todo
+    | Alloca(id reg, type t, type elemsType, value numElems, int align) ## allocates mem on stack
     | GEP(id reg, type t, ptr p, idx* i, inbounds) # get element pointer ## todo
     | Load(id reg, type st, value v, int align)
 
     # instructions w/out assign
     | Store(type st, value src, type t, value dst, int align) # todo align
-    | Br(str bb_label , value cond , str true, str false) # todo more on this
+    | Br(str bb_label , value cond , str true, str false) # todo more on this; we actually don't need to support these
     | Ret(str bb_label, type t, value val) # todo more on this
     | Skip
     | Unreachable
-
-type = UnknownType(int? depth) # todo Depth? ? default = 0
-    | NamedType(str name)
-    | IntType(int size)
-    | PtrType(type? t, int? d) # default depth = 0
-    | ArrayType(elems? e, type t, int? d)
-
-# type = Int | Ptr | Array | Unknown
-
-value = TypeFixedValue(value v, int min, int max) # todo uncertain what min and max really function as
-    | Input(str name, type t) # must start with % or
 
 const = ConstantVal(value v, type t) #todo type for v ? for all const!
     | UndefVal(type t)
@@ -44,8 +38,16 @@ const = ConstantVal(value v, type t) #todo type for v ? for all const!
     # todo cont... and unary const function
 
 
-# all values are instance of value
-# and they all have a type
+type = UnknownType(int? depth) # todo Depth? ? default = 0
+    | NamedType(str name)
+    | IntType(int size)
+    | PtrType(type? t, int? d) # default depth = 0
+    | ArrayType(value? e, type? t, int? d)
+
+
+value = TypeFixedValue(id name, value v, int min, int max) # todo uncertain what min and max really function as
+    | Input(id name, type t) # must start with % or
+
 
 cnstUnaryOp = Not | Neg | Last
 
