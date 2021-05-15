@@ -72,6 +72,7 @@ const = ConstantVal(int val, type t)
 type = UnknownType(int? depth)
     | NamedType(str name)
     | IntType(int size)
+    # todo double check ptr type and array type and all types
     | PtrType(type? t, int? d) # default depth = 0
     | ArrayType(value? e, type? t, int? d)
 

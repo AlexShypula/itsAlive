@@ -7,8 +7,8 @@ from alive.value import *
 from alive.constants import *
 from asdl.alive_form_helpers import *
 
-## todo: get name for constants!
-## todo make sure the way you're getting names is correct
+## todo names: for TypeFixedValue, because unsure about function, unsure about name construction
+## todo still implement boolPred ops
 
 def type_to_alive_form(ast_tree: AbstractSyntaxTree):
     constructor_name = ast_tree.production.constructor.name
@@ -88,6 +88,7 @@ def constant_to_alive_form(ast_tree):
         print("constructor name was {}, didn't match with any instr constructors".format(constructor_name))
         raise ValueError
     # TODO: get the name of the constant!!
+    name = const.getUniqueName()
     idents.add(name)
     prog_idents[name] = const
     return const
@@ -110,14 +111,14 @@ def instrOperand_to_alive_form(ast_tree):
 def instr_to_alive_form(ast_tree):
     constructor_name = ast_tree.production.constructor.name
     if constructor_name == "CopyOperand":
-        reg = ast_tree["reg"].value
+        name = ast_tree["reg"].value
         v = value_to_alive_form(ast_tree["v"].value)
         t = type_to_alive_form(ast_tree["t"].value)
         expr = CopyOperand(v=v, type=t)
-        stmt = (reg, expr)
+        stmt = (name, expr)
 
     elif constructor_name == "BinOp":
-        reg = ast_tree["reg"].value
+        name = ast_tree["reg"].value
         op = tree2AliveOp(asdl_name=ast_tree["op"].value, constructor_name=constructor_name)
         t = type_to_alive_form(ast_tree["t"].value)
         v1 = instrOperand_to_alive_form(ast_tree["v1"].value)
@@ -125,46 +126,46 @@ def instr_to_alive_form(ast_tree):
         # flag names are identical to strings used in the BinOp constructor
         flags = [v.production.constructor.name for v in ast_tree["flags"].value]
         expr = BinOp(op=op, type=t, v1=v1, v2=v2, flags=flags)
-        stmt = (reg, expr)
+        stmt = (name, expr)
 
     elif constructor_name == "ConversionOp":
-        reg = ast_tree["reg"].value
+        name = ast_tree["reg"].value
         op = tree2AliveOp(asdl_name=ast_tree["op"].value, constructor_name=constructor_name)
         st = type_to_alive_form(ast_tree["st"].value)
         v = instrOperand_to_alive_form(ast_tree["v"].value)
         t = type_to_alive_form(ast_tree["t"].value)
         expr = ConversionOp(op=op, stype=st, v=v, type=t)
-        stmt = (reg, expr)
+        stmt = (name, expr)
 
     elif constructor_name == "Icmp":
-        reg = ast_tree["reg"].value
+        name = ast_tree["reg"].value
         op = tree2AliveOp(asdl_name=ast_tree["op"].value, constructor_name=constructor_name)
         t = type_to_alive_form(ast_tree["t"].value)
         v1 = instrOperand_to_alive_form(ast_tree["v1"].value)
         v2 = instrOperand_to_alive_form(ast_tree["v2"].value)
         expr = Icmp(op=op, type=t, v1=v1, v2=v2)
-        stmt = (reg, expr)
+        stmt = (name, expr)
 
     elif constructor_name == "Select":
-        reg = ast_tree["reg"].value
+        name = ast_tree["reg"].value
         t = type_to_alive_form(ast_tree["t"].value)
         # will be be icmp
         c = instr_to_alive_form(ast_tree["c"].value)
         v1 = instrOperand_to_alive_form(ast_tree["v1"].value)
         v2 = instrOperand_to_alive_form(ast_tree["v2"].value)
         expr = Select(type=t, c=c, v1=v1, v2=v2)
-        stmt = (reg, expr)
+        stmt = (name, expr)
 
     # todo: you could make align optional and parse differently to make this easier
     elif constructor_name == "Alloca":
-        reg = ast_tree["reg"].value
+        name = ast_tree["reg"].value
         t = type_to_alive_form(ast_tree["t"].value)
         elemsType = type_to_alive_form(ast_tree["elemnsType"].value)
         # num elems is passed onto TypeFixedValue inside Alloca, so it must be of type Value
         numElems = value_to_alive_form(ast_tree["numElems"].value)
         align = int(ast_tree["align"].value)
         expr = Alloca(type=t, elemsType=elemsType, numElems=numElems, align=align)
-        stmt = (reg, expr)
+        stmt = (name, expr)
 
     # todo
     elif constructor_name == "GEP":
@@ -174,23 +175,23 @@ def instr_to_alive_form(ast_tree):
 
     # todo: you could make align optional and parse differently to make this easier
     elif constructor_name == "Load":
-        reg = ast_tree["reg"].value
+        name = ast_tree["reg"].value
         st = type_to_alive_form(ast_tree["st"].value)
         v = instr_to_alive_form(ast_tree["v"].value)
         align = int(ast_tree["align"].value)
         expr = Load(stype=st, v=v, align=align)
-        stmt = (reg, expr)
+        stmt = (name, expr)
 
     # todo: you could make align optional and parse differently to make this easier
     elif constructor_name == "Store":
-        id = "Store" + str(len(idents) + 1)
         st = type_to_alive_form(ast_tree["st"].value)
         src = instr_to_alive_form(ast_tree["src"].value)
         t = type_to_alive_form(ast_tree["t"].value)
         dst = instr_to_alive_form(ast_tree["dst"].value)
         align =int(ast_tree["align"].value)
         expr = Store(stype=st, src=src, type=t, dst=dst, align=align)
-        stmt = (id, expr)
+        name = expr.getUniqueName()
+        stmt = (name, expr)
 
     # todo bb label
     elif constructor_name == "Br":
@@ -213,14 +214,14 @@ def instr_to_alive_form(ast_tree):
         # stmt = (id, expr)
 
     elif constructor_name == "Skip":
-        id = "Skip" + str(len(idents) + 1)
         expr = Skip()
-        stmt = (id, expr)
+        name = expr.getUniqueName()
+        stmt = (name, expr)
 
     elif constructor_name == "Unreachable":
-        id = "Unreachable" + str(len(idents) + 1)
         expr = Unreachable
-        stmt = (id, expr)
+        name = expr.getUniqueName()
+        stmt = (name, expr)
 
     else:
         print("constructor name was {}, didn't match with any instr constructors".format(constructor_name))
@@ -228,10 +229,10 @@ def instr_to_alive_form(ast_tree):
 
     # add to the global prog dict
     # sometimes we may recursively call on instr and we'd like to add it first
-    prog[id] = expr
-    `prog_idents[id]` = expr
+    prog[name] = expr
+    prog_idents[name] = expr
     # add the id to idents
-    idents.add(id)
+    idents.add(name)
 
     return stmt
 
@@ -246,7 +247,7 @@ def prog_to_alive_form(ast_tree):
     idents = set()
     for instr in ast_tree["instructions"].value:
         instr_to_alive_form(instr)
-    return prog
+    return prog, prog_idents
 
 def opt_to_alive_form(ast_tree):
     pre = ast_tree["precondition"].value if "precondition" in ast_tree.keys() else None
