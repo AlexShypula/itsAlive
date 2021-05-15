@@ -1,4 +1,59 @@
 from alive.language import Icmp, BinOp, ConversionOp
+from alive.constants import CnstUnaryOp, CnstBinaryOp, CnstFunction
+
+cnstUnaryTree2OpName = {
+    'Not':  '~',
+    'Neg': '-'
+}
+
+
+cnstBinaryTree2OpName = {
+    'And': '&',
+    'Or': '|',
+    'Xor': '^',
+    'Add': '+',
+    'Sub': '-',
+    'Mul': '*',
+    'Div': '/',
+    'DivU': '/u',
+    'Rem': '%',
+    'RemU': '%u',
+    'AShr': '>>',
+    'LShr': 'u>>',
+    'Shl': '<<',
+}
+
+cnstFunctionTree2OpName = {
+    'abs':   'abs',
+    'sbits': 'ComputeNumSignBits',
+    'obits': 'computeKnownOneBits',
+    'zbits': 'computeKnownZeroBits',
+    'ctlz':  'countLeadingZeros',
+    'cttz':  'countTrailingZeros',
+    'log2':  'log2',
+    'lshr':  'lshr',
+    'max':   'max',
+    'sext':  'sext',
+    'trunc': 'trunc',
+    'umax':  'umax',
+    'width': 'width',
+    'zext':  'zext',
+}
+
+
+def tree2cnstAliveOp(asdl_name: str, constructor_name: str):
+    if constructor_name == "CnstUnaryOp":
+        opName = cnstUnaryTree2OpName[asdl_name]
+        op = CnstUnaryOp.getOpId(opName)
+    elif constructor_name == "CnstBinaryOp":
+        opName = cnstBinaryTree2OpName[asdl_name]
+        op = CnstBinaryOp.getOpId(opName)
+    elif constructor_name == "CnstFunction":
+        ## Icmp is different where we pass in the opName !
+        opName = cnstFunctionTree2OpName[asdl_name]
+        op = CnstFunction.getOpId(opName)
+    return op
+
 
 icmpTree2OpName = {
     'EQ': 'eq',

@@ -5,28 +5,11 @@ from asdl.asdl import *
 from asdl.asdl_ast import AbstractSyntaxTree
 from alive.language import *
 from alive.value import *
+from alive.constants import *
 from asdl.alive_form_helpers import *
 
 
 global idents = set()
-
-
-def value_to_alive_form(ast_tree):
-    constructor_name = ast_tree.production.constructor.name
-    if constructor_name == "TypeFixedValue"
-        id = ast_tree["name"].value
-        v = value_to_alive_form(ast_tree["v"].value)
-        min = int(ast_tree["min"].value)
-        max = int(ast_tree["max"].value)
-        outValue = TypeFixedValue(v=v, min=min, max=max)
-        out = (id, outValue)
-    elif constructor_name == "Input":
-        id = ast_tree["name"].value
-        t = type_to_alive_form(ast_tree["t"].value)
-        outValue = Input(name=id, type=t)
-        out = (id, outValue)
-    idents.add(id)
-    return out
 
 
 def type_to_alive_form(ast_tree):
@@ -35,7 +18,6 @@ def type_to_alive_form(ast_tree):
         depth = ast_tree["depth"].value if "depth" in ast_tree.keys() else 0
         t = UnknownType(d=depth)
     elif constructor_name == "NamedType":
-        # todo: should we add NameedType to idents?
         name = ast_tree["name"].value
         t = NamedType(name=name)
     elif constructor_name == "IntType":
@@ -54,6 +36,51 @@ def type_to_alive_form(ast_tree):
         t = ArrayType(elems=elems, type=underlyingType, depth=depth)
     return t
 
+
+def value_to_alive_form(ast_tree):
+    constructor_name = ast_tree.production.constructor.name
+    if constructor_name == "TypeFixedValue":
+        id = ast_tree["name"].value
+        v = value_to_alive_form(ast_tree["v"].value)
+        min = int(ast_tree["min"].value)
+        max = int(ast_tree["max"].value)
+        outValue = TypeFixedValue(v=v, min=min, max=max)
+        out = (id, outValue)
+    elif constructor_name == "Input":
+        id = ast_tree["name"].value
+        t = type_to_alive_form(ast_tree["t"].value)
+        outValue = Input(name=id, type=t)
+        out = (id, outValue)
+    idents.add(id)
+    return out
+
+
+def constant_to_alive_form(ast_tree):
+    constructor_name = ast_tree.production.constructor.name
+    if constructor_name == "ConstantVal":
+        val = int(ast_tree["val"].value) # todo, can we go beyond int
+        t = type_to_alive_form(ast_tree["t"].value)
+        const = ConstantVal(val=val, type=t)
+    elif constructor_name == "UndefVal":
+        t = type_to_alive_form(ast_tree["t"].value)
+        const = UndefVal(type=t)
+    elif constructor_name == "CnstUnaryOp":
+        op = tree2cnstAliveOp(asdl_name=ast_tree["op"].value, constructor_name=constructor_na,e):
+        v = ast_tree["val"].value
+        const = CnstUnaryOp(op=op, v=v)
+    elif constructor_name == "CnstBinaryOp":
+        op = tree2cnstAliveOp(asdl_name=ast_tree["op"].value, constructor_name=constructor_name)
+        v1 = ast_tree["v1"].value
+        v2 = ast_tree["v2"].value
+        const = CnstBinaryOp(op=op, v1=v1, v2=v2)
+    elif constructor_name == "CnstFunction":
+        op = tree2cnstAliveOp(asdl_name=ast_tree["op"].value, constructor_name=constructor_name)
+        # todo !! how to parse something with multiple fields??!!!
+        args = [value_to_alive_form(v) for v in ast_tree["args"].value]
+        t = type_to_alive_form(ast_tree["t"].value)
+        const = CnstFunction(op=op, args=args, type=t)
+    return const
+
 def stmt_to_alive_form(ast_tree):
     constructor_name = ast_tree.production.constructor.name
     if constructor_name == "CopyOperand":
@@ -69,7 +96,8 @@ def stmt_to_alive_form(ast_tree):
         t = type_to_alive_form(ast_tree["t"].value)
         v1 = value_to_alive_form(ast_tree["v1"].value)
         v2 = value_to_alive_form(ast_tree["v2"].value)
-        flags = ast_tree["flags"].value # todo: flags to alive form
+        # todo how do I parse out lists
+        flags = [v.production.constructor.name for v in ast_tree["flags"].value]
         expr = BinOp(op=op, type=t, v1=v1, v2=v2, flags=flags)
         stmt = (reg, expr)
 
@@ -172,6 +200,20 @@ def stmt_to_alive_form(ast_tree):
     # todo setattr to main / globals with the ID
 
     return stmt
+
+from collecitons import OrderedDict
+
+def prog_to_alive_form(ast_tree):
+    constructor_name = ast_tree.production.constructor.name
+    assert constructor_name == "Prog"
+    prog = OrderedDict()
+    for instr in ast_tree["instructions"].value:
+        id, expr = stmt_to_alive_form(instr)
+        prog[id] = expr
+    return prog
+
+
+
 
 #
 # def ast_to_logical_form(ast_tree):

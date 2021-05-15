@@ -5,17 +5,30 @@ str, int, depth, id, ptr
 # todo for skip and unreachable instructions, is it okay if I don't have parens for the constructor?
 # todo for type: NamedType, how does that fit in ? do we need type constructors ? May these be inferred ?
 
-alive = Opt(pre? precondition, prog src, prog tgt)
+alive = Opt(boolPred? precondition, prog src, prog tgt)
 
 prog = Prog(instr* instructions)
 
+boolPred = BinaryBoolPred(binBoolPredOp op, operand v1, operand v2)
+    | LLVMBoolPred(llvmBoolPredOp, operand* args) # like with const fun you can parse this out more broadly
+    | PredOr(boolPred* args)
+    | PredAnd(boolPred* args)
+    | PredNot(boolPred v)
+    | TruePred
+
+precOperand = const | input
+
+instr = cmpInstr | stdInstr
+
+cmpInstr = Icmp(id reg, icmpOp op, type t, value v1, value v2)
+
     # assign instructions
-instr = CopyOperand(id reg, value v, type t)
+stdInstr = CopyOperand(id reg, value v, type t)
     | BinOp(id reg, binOp op, type t, value v1, value v2, flag* flags)
     | ConversionOp(id reg, conversionOp op, type st, value v, type t)
-    | Icmp(id reg, icmpOp op, type t, value v1, value v2)
-
-    | Select(id reg, type t, conditionalExpr c, value v1, value v2) # if conditionalExpr == 1, then v1, else v1
+    # this will be Icmp here in select as c; it would be nice
+    # to force the c in select to only be of Icmp constructor
+    | Select(id reg, type t, instr c, value v1, value v2) # if conditionalExpr == 1, then v1, else v1
     # The ‘alloca‘ instruction allocates memory on the stack frame of the currently executing function, to be automatically released when this function returns to its caller. The object is always allocated in the address space for allocas indicated in the datalayout.
     # align: this is an integer which defines alignment in memory; default is 0
     | Alloca(id reg, type t, type elemsType, value numElems, int align) ## allocates mem on stack
@@ -29,13 +42,14 @@ instr = CopyOperand(id reg, value v, type t)
     | Skip
     | Unreachable
 
-const = ConstantVal(value v, type t) #todo type for v ? for all const!
+const = ConstantVal(int val, type t) #todo type for v ? for all const!
     | UndefVal(type t)
     | CnstUnaryOp(cnstUnaryOp op, value v)
     | CnstBinaryOp(cnstBinOp, const c1, const c2)
     | CnstFunction(cnstFunOp, value* args, type t)
     # todo decide: we could also expand out CnstFunction out and add constraints on the number of args for binary
     # todo cont... and unary const function
+        # update: I like this idea a lot: it may take extra refactoring work
 
 
 type = UnknownType(int? depth) # todo Depth? ? default = 0
@@ -45,20 +59,24 @@ type = UnknownType(int? depth) # todo Depth? ? default = 0
     | ArrayType(value? e, type? t, int? d)
 
 
-value = TypeFixedValue(id name, value v, int min, int max) # todo uncertain what min and max really function as
-    | Input(id name, type t) # must start with % or
+input = Input(id name, type t) # must start with % or
+# what is the true point of TypeFixedValue?
+typeFixedValue = TypeFixedValue(id name, value v, int min, int max)
+
+value = input | typeFixedValue
+
+# TypeFixedValue(id name, value v, int min, int max) # todo uncertain what min and max really function as
+#    | Input(id name, type t) # must start with % or
 
 
-cnstUnaryOp = Not | Neg | Last
+cnstUnaryOp = Not | Neg
 
 cnstFunOp = abs | sbits | obits | zbits | ctlz | cttz | log2 | lshr | max | sext | trunc | umax
-    | width | zext | Last
+    | width | zext
 
 
-conditionalExpr = # todo needed in Select, if conditionalExpr == 1, then v1, else v1
-
-# todo: these are actually actual strings; maybe it is good to keep it like this and convert them into strings later on?
-flags = nsw | nuw | exact # TODO others?
+# it seems wise to keep these exactly the same as strings for simplicity
+flags = nsw | nuw | exact
 
 icmpOp = EQ | NE | UGT | UGE | ULT | ULE | SGT | SGE | SLT | SLE | Var | Last
 
@@ -66,4 +84,4 @@ conversionOp = Trunc | ZExt | SExt | ZExtOrTrunc | Ptr2Int | Int2Ptr | Bitcast |
 
 binOp = Add | Sub | Mul | UDiv | SDiv | URem | SRem | Shl | AShr | LShr | And | Or | Xor | Last
 
-cnstBinOp = And | Or | Xor | Add | Sub | Mul | Div | DivU | Rem | RemU | AShr | LShr | Shl | Last
+cnstBinOp = And | Or | Xor | Add | Sub | Mul | Div | DivU | Rem | RemU | AShr | LShr | Shl
