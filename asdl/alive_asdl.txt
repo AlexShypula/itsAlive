@@ -16,7 +16,7 @@ alive = Opt(boolPred? precondition, prog src, prog tgt)
 prog = Prog(instr* instructions)
 
 
-boolPred = BinaryBoolPred(binBoolPredOp op, operand v1, operand v2)
+boolPred = BinaryBoolPred(binBoolPredOp op, precOperand v1, precOperand v2)
     | LLVMBoolPred(llvmBoolPredOp, operand* args) # like with const fun you can parse this out more broadly
     | PredOr(boolPred* args)
     | PredAnd(boolPred* args)

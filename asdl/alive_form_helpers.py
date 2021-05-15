@@ -1,6 +1,23 @@
 from alive.language import Icmp, BinOp, ConversionOp
 from alive.constants import CnstUnaryOp, CnstBinaryOp, CnstFunction
 
+assignInstrs = set(["CopyOperand",
+                "BinOp",
+                "ConversionOp",
+                "Select",
+                "Alloca",
+                "GEP",
+                "Load"])
+
+const = set(["ConstantVal",
+             "UndefVal",
+             "CnstUnaryOp",
+             "CnstBinaryOp",
+             "CnstFunction"])
+
+input = set(["Input"])
+
+
 cnstUnaryTree2OpName = {
     'Not':  '~',
     'Neg': '-'
