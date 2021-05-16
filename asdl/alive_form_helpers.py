@@ -1,5 +1,6 @@
 from alive.language import Icmp, BinOp, ConversionOp
 from alive.constants import CnstUnaryOp, CnstBinaryOp, CnstFunction
+from alive.precondition import BinaryBoolPred, LLVMBoolPred
 
 assignInstrs = set(["CopyOperand",
                 "BinOp",
@@ -16,6 +17,51 @@ const = set(["ConstantVal",
              "CnstFunction"])
 
 input = set(["Input"])
+
+
+binBoolPredTree2OpName = {
+    'EQ': '==',
+    'NE': '!=',
+    'SLT': '<',
+    'SLE': '<=',
+    'SGT': '>',
+    'SGE': '>=',
+    'ULT': 'u<',
+    'ULE': 'u<=',
+    'UGT': 'u>',
+    'UGE':'u>=',
+}
+
+llvmBoolPredTree2OpName = {
+    'eqptrs': 'equivalentAddressValues',
+    'isPower2': 'isPowerOf2',
+    'isPower2OrZ': 'isPowerOf2OrZero',
+    'isShiftedMask': 'isShiftedMask',
+    'isSignBit': 'isSignBit',
+    'maskZero': 'MaskedValueIsZero',
+    'NSWAdd': 'WillNotOverflowSignedAdd',
+    'NUWAdd': 'WillNotOverflowUnsignedAdd',
+    'NSWSub': 'WillNotOverflowSignedSub',
+    'NUWSub': 'WillNotOverflowUnsignedSub',
+    'NSWMul': 'WillNotOverflowSignedMul',
+    'NUWMul': 'WillNotOverflowUnsignedMul',
+    'NUWShl': 'WillNotOverflowUnsignedShl',
+    'OneUse': 'hasOneUse',
+}
+
+
+
+def tree2llvmPredOp(asdl_name: str, constructor_name: str):
+    if constructor_name == "BinaryBoolPred":
+        opName = binBoolPredTree2OpName[asdl_name]
+        op = BinaryBoolPred.getOpId(opName)
+    elif constructor_name == "LLBMBoolPred":
+        opName = llvmBoolPredTree2OpName[asdl_name]
+        op = LLVMBoolPred.getOpId(opName)
+    else:
+        print("constructor name is {} not found in tree2llvmPredOp constructors".format(constructor_name))
+        raise ValueError
+    return op
 
 
 cnstUnaryTree2OpName = {
@@ -69,6 +115,9 @@ def tree2cnstAliveOp(asdl_name: str, constructor_name: str):
         ## Icmp is different where we pass in the opName !
         opName = cnstFunctionTree2OpName[asdl_name]
         op = CnstFunction.getOpId(opName)
+    else:
+        print("constructor name is {} not found in tree2cnstAliveOp constructors".format(constructor_name))
+        raise ValueError
     return op
 
 
@@ -123,4 +172,7 @@ def tree2AliveOp(asdl_name: str, constructor_name: str):
     elif constructor_name == "Icmp":
         ## Icmp is different where we pass in the opName !
         op = conversionOpTree2OpName[asdl_name]
+    else:
+        print("constructor name is {} not found in tree2AliveOp constructors".format(constructor_name))
+        raise ValueError
     return op

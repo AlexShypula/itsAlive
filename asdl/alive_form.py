@@ -6,9 +6,39 @@ from alive.language import *
 from alive.value import *
 from alive.constants import *
 from asdl.alive_form_helpers import *
+from alive.precondition import *
 
 ## todo names: for TypeFixedValue, because unsure about function, unsure about name construction
 ## todo still implement boolPred ops
+
+
+def bool_pred_to_alive_form(ast_tree):
+    constructor_name = ast_tree.production.constructor.name
+    if constructor_name == "BinaryBoolPred":
+        op = tree2llvmPredOp(ast_tree["op"].value)
+        v1 = instrOperand_to_alive_form(ast_tree["v1"].value)
+        v2 = instrOperand_to_alive_form(ast_tree["v2"].value)
+        bool_pred = BinaryBoolPred(op=op, v1=v1, v2=v2)
+    elif constructor_name == "LLVMBoolPred":
+        op = tree2llvmPredOp(ast_tree["op"].value)
+        args = [instrOperand_to_alive_form(v) for v in ast_tree["args"].value]
+        bool_pred = LLVMBoolPred(op=op, args=args)
+    elif constructor_name == "PredOr":
+        args = [bool_pred_to_alive_form(p) for p in  ast_tree["args"].value]
+        bool_pred = PredOr(args)
+    elif constructor_name == "PredAnd":
+        args = [bool_pred_to_alive_form(p) for p in ast_tree["args"].value]
+        bool_pred = PredAnd(args=args)
+    elif constructor_name == "PredNot":
+        v = bool_pred_to_alive_form(ast_tree["args"].value)
+        bool_pred = PredNot(v=v)
+    elif constructor_name == "TruePred":
+        bool_pred = TruePred()
+    else:
+        print("constructor name was {}, didn't match with any bool_pred constructors".format(constructor_name))
+        raise ValueError
+    return bool_pred
+
 
 def type_to_alive_form(ast_tree: AbstractSyntaxTree):
     constructor_name = ast_tree.production.constructor.name

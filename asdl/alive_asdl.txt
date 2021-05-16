@@ -24,6 +24,13 @@ boolPred = BinaryBoolPred(binBoolPredOp op, precOperand v1, precOperand v2)
     | TruePred
 
 
+binBoolPredOp = EQ | NE | SLT | SLE | SGT | SGE | ULT | ULE | UGT | UGE
+
+
+llvmBoolPredOp = eqptrs | isPower2 | isPower2OrZ | isShiftedMask | isSignBit | maskZero |
+  NSWAdd | NUWAdd | NSWSub | NUWSub | NSWMul | NUWMul | NUWShl | OneUse
+
+
 precOperand = const | input
 
 
